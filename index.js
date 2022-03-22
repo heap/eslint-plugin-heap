@@ -1,3 +1,5 @@
+const noWildCardImports = require('./rules/no-wildcard-imports');
+
 module.exports = {
   rules: {
     'no-mobx': {
@@ -26,6 +28,12 @@ module.exports = {
           },
         };
       },
+    },
+    'no-wildcard-imports': {
+      meta: {
+        fixable: 'code',
+      },
+      create: noWildCardImports.create,
     },
   },
 };
