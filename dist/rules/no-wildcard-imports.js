@@ -2,7 +2,29 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 const createRule_1 = require("../utils/createRule");
 const isIdentifier = ({ type }) => type === 'Identifier' || type === 'JSXIdentifier';
-const findUsages = (program, importIdentifierValue) => {
+const isOccurrence = (identifier, punctuator, identifierValueToFind) => isIdentifier(identifier) &&
+    identifier.value === identifierValueToFind &&
+    punctuator.type === 'Punctuator';
+const isInvalidUsage = (program, importIdentifierValue, usageToFind) => {
+    const tokens = program.tokens;
+    if (!Array.isArray(tokens)) {
+        return true;
+    }
+    for (let i = 0; i < tokens.length; i++) {
+        if (tokens[i].value === usageToFind) {
+            if (i < 2) {
+                return true;
+            }
+            const identifier = tokens[i - 2];
+            const punctuator = tokens[i - 1];
+            if (!isOccurrence(identifier, punctuator, importIdentifierValue)) {
+                return true;
+            }
+        }
+    }
+    return false;
+};
+const findValidUsages = (program, importIdentifierValue) => {
     const tokens = program.tokens;
     if (!Array.isArray(tokens)) {
         return {};
@@ -13,9 +35,7 @@ const findUsages = (program, importIdentifierValue) => {
         const identifier = tokens[i - 2];
         const punctuator = tokens[i - 1];
         const token = tokens[i];
-        if (isIdentifier(identifier) &&
-            identifier.value === importIdentifierValue &&
-            punctuator.type === 'Punctuator') {
+        if (isOccurrence(identifier, punctuator, importIdentifierValue)) {
             if (punctuator.value === '.') {
                 /**
                  * example:
@@ -53,19 +73,21 @@ const buildFixFunction = (node, usages, usageRecords) => (fixer) => {
     return fixes;
 };
 const reportLintError = (context, node, source) => {
-    const program = node.parent.parent;
+    const parent = node.parent;
+    const program = parent.parent;
     const importName = node.local.name; // e.g. for "import * as _", this will be "_"
-    const { usages, usageRecords } = findUsages(program, importName);
-    const message = `Wilcard imports ("import * as") are banned for ${source}. Destructure only the modules you need`;
-    if (usages && usages.length) {
-        (0, createRule_1.reportForNode)(context, {
+    const { usages, usageRecords } = findValidUsages(program, importName);
+    const hasInvalidUsages = usages === null || usages === void 0 ? void 0 : usages.some((usage) => isInvalidUsage(program, importName, usage));
+    if (usages && usages.length && !hasInvalidUsages) {
+        context.report({
             node,
-            message,
+            messageId: 'noWildcardImports',
+            data: { source },
             fix: buildFixFunction(node, usages, usageRecords),
         });
     }
     else {
-        context.report(node, message);
+        context.report({ node, messageId: 'noWildcardImports', data: { source } });
     }
 };
 exports.default = (0, createRule_1.createRule)({
@@ -75,7 +97,7 @@ exports.default = (0, createRule_1.createRule)({
         docs: {
             category: 'Best Practices',
             description: 'discorage wildcard imports since it increases frontend bundle size and ts-node startup time',
-            recommended: 'error'
+            recommended: 'error',
         },
         fixable: 'code',
         schema: [
@@ -86,14 +108,14 @@ exports.default = (0, createRule_1.createRule)({
                         type: 'array',
                         items: {
                             type: 'string',
-                        }
+                        },
                     },
                 },
             },
         ],
         messages: {
-            noWildcardImports: 'Wilcard imports ("import * as") are banned for this library. Destructure only the functionality you need',
-        }
+            noWildcardImports: 'Wilcard imports ("import * as") are banned for {{ source }}. Destructure only the functionality you need',
+        },
     },
     defaultOptions: [{}],
     create: (context, [options]) => {
@@ -107,7 +129,7 @@ exports.default = (0, createRule_1.createRule)({
                         return;
                     }
                     if (!Array.isArray(options.packages)) {
-                        throw new Error(`"packages" option must be an Array for heap/no-wildcard-import eslint rule`);
+                        throw new Error('"packages" option must be an Array for heap/no-wildcard-import eslint rule');
                     }
                     if (options.packages.includes(source)) {
                         reportLintError(context, node, source);
@@ -115,5 +137,5 @@ exports.default = (0, createRule_1.createRule)({
                 }
             },
         };
-    }
+    },
 });

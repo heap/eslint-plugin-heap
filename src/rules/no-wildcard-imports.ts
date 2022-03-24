@@ -7,6 +7,7 @@ import {
   ImportNamespaceSpecifier,
   Program,
   Range,
+  Token,
 } from '@typescript-eslint/types/dist/ast-spec';
 import { createRule } from '../utils/createRule';
 
@@ -16,10 +17,34 @@ interface UsageRecord {
   usage: string;
 }
 
-const isIdentifier = ({ type }: { type: string }) =>
-  type === 'Identifier' || type === 'JSXIdentifier';
+const isIdentifier = ({ type }: Token) => type === 'Identifier' || type === 'JSXIdentifier';
 
-const findUsages = (program: Program, importIdentifierValue: string) => {
+const isOccurrence = (identifier: Token, punctuator: Token, identifierValueToFind: string) =>
+  isIdentifier(identifier) &&
+  identifier.value === identifierValueToFind &&
+  punctuator.type === 'Punctuator';
+
+const isInvalidUsage = (program: Program, importIdentifierValue: string, usageToFind: string) => {
+  const tokens = program.tokens;
+  if (!Array.isArray(tokens)) {
+    return true;
+  }
+  for (let i = 0; i < tokens.length; i++) {
+    if (tokens[i].value === usageToFind) {
+      if (i < 2) {
+        return true;
+      }
+      const identifier = tokens[i - 2];
+      const punctuator = tokens[i - 1];
+      if (!isOccurrence(identifier, punctuator, importIdentifierValue)) {
+        return true;
+      }
+    }
+  }
+  return false;
+};
+
+const findValidUsages = (program: Program, importIdentifierValue: string) => {
   const tokens = program.tokens;
   if (!Array.isArray(tokens)) {
     return {};
@@ -30,11 +55,7 @@ const findUsages = (program: Program, importIdentifierValue: string) => {
     const identifier = tokens[i - 2];
     const punctuator = tokens[i - 1];
     const token = tokens[i];
-    if (
-      isIdentifier(identifier) &&
-      identifier.value === importIdentifierValue &&
-      punctuator.type === 'Punctuator'
-    ) {
+    if (isOccurrence(identifier, punctuator, importIdentifierValue)) {
       if (punctuator.value === '.') {
         /**
          * example:
@@ -86,8 +107,9 @@ const reportLintError = (
   const parent = node.parent as ImportDeclaration;
   const program = parent.parent as Program;
   const importName = node.local.name; // e.g. for "import * as _", this will be "_"
-  const { usages, usageRecords } = findUsages(program, importName);
-  if (usages && usages.length) {
+  const { usages, usageRecords } = findValidUsages(program, importName);
+  const hasInvalidUsages = usages?.some((usage) => isInvalidUsage(program, importName, usage));
+  if (usages && usages.length && !hasInvalidUsages) {
     context.report({
       node,
       messageId: 'noWildcardImports',
