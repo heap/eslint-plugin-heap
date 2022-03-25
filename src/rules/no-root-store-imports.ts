@@ -12,19 +12,21 @@ export default createRule<Options, MessageIds>({
     docs: {
       category: 'Best Practices',
       description: 'discourage use of RootStore imports',
-      recommended: 'error'
+      recommended: 'error',
     },
-    schema: [{
-      type: 'object',
-      properties: {
-        message: {
-          type: 'string',
+    schema: [
+      {
+        type: 'object',
+        properties: {
+          message: {
+            type: 'string',
+          },
         },
       },
-    }],
+    ],
     messages: {
       noRootStoreImports: MESSAGE,
-    }
+    },
   },
   defaultOptions: [{}],
   create: (context, [options]) => ({
@@ -32,8 +34,8 @@ export default createRule<Options, MessageIds>({
       const sourceValue = node.source.value;
       if (typeof sourceValue === 'string' && sourceValue.endsWith('/stores')) {
         const message = options?.message ?? MESSAGE;
-        reportForNode(context, { node, message })
+        reportForNode(context, { node, message });
       }
     },
-  })
+  }),
 });
