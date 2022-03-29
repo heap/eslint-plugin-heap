@@ -5,7 +5,7 @@ type MessageIds = 'noMobx';
 
 const MESSAGE = 'MobX not allowed';
 
-// test
+// test2
 
 export default createRule<Options, MessageIds>({
   name: 'no-mobx',
