@@ -26,6 +26,7 @@
   },
   "scripts": {
     "build": "./node_modules/typescript/bin/tsc -b",
+    "lint": "eslint 'src/**/*.ts'",
     "test": "jest",
     "test:jest": "jest",
     "test:jest:watch": "jest --watch"

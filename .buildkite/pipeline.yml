@@ -1,3 +1,21 @@
 steps:
-  - label: ":hammer: Tests"
+  - label: ":jest: Jest Tests"
     command: "npm install && npm test"
+    plugins:
+      - docker#v3.2.0:
+          image: "node:14"
+          workdir: /app
+
+  - label: ":eslint: ESLint"
+    command: "npm install && npm run lint"
+    plugins:
+      - docker#v3.2.0:
+          image: "node:14"
+          workdir: /app
+
+  - label: ":gear: Build"
+    command: "./.buildkite/validate-build.sh"
+    plugins:
+      - docker#v3.2.0:
+          image: "node:14"
+          workdir: /app
