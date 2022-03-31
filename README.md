@@ -1,6 +1,6 @@
 # eslint-plugin-heap
 
-Heap's custom eslint rules
+Heap's custom eslint rules. These rules are under development and are not recommended for use outside of Heap. We are not accepting contributors at this time.
 
 ## Table of Contents
 
