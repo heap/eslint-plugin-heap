@@ -10,7 +10,6 @@ echo ""
 echo "`npm run build`"
 npm run build
 
-
 if [ $(git diff --name-only dist/ | wc -l) -gt 0 ]; then
   git --no-pager diff dist/
   echo ""
