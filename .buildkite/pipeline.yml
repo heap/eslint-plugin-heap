@@ -14,7 +14,7 @@ steps:
           workdir: /app
 
   - label: ":gear: Build"
-    command: "./.buildkite/validate-build.sh"
+    command: "./.buildkite/validate_build.bash"
     plugins:
       - docker#v3.2.0:
           image: "node:14"
