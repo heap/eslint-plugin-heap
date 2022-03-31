@@ -3,6 +3,8 @@ import { createRule, reportForNode } from '../utils/createRule';
 type Options = [{ message?: string }];
 type MessageIds = 'noMobx';
 
+// testing
+
 const MESSAGE = 'MobX not allowed';
 
 export default createRule<Options, MessageIds>({
