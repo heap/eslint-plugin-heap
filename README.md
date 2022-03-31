@@ -18,5 +18,6 @@ Heap's custom eslint rules. These rules are under development and are not recomm
 
 ## Publishing
 - Run `npm run build` to build js files in `dist/`
-- Commit and push all files, including `dist/`
-- Use the latest git hash for the `eslint-plugin-heap` entry in Heap's `package.json` file
+- Commit and push all files (including changes in `dist/`) to a topic branch
+- Open a Pull Request to merge into `main`; Squash and merge once approved
+- Once merged, use the latest commit hash in `main` for the `eslint-plugin-heap` entry in Heap's `package.json` file
