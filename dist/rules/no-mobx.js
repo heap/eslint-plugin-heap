@@ -9,19 +9,21 @@ exports.default = (0, createRule_1.createRule)({
         docs: {
             category: 'Best Practices',
             description: 'do not allow MobX since it is not compatible with upcoming React features',
-            recommended: 'error'
+            recommended: 'error',
         },
-        schema: [{
+        schema: [
+            {
                 type: 'object',
                 properties: {
                     message: {
                         type: 'string',
                     },
                 },
-            }],
+            },
+        ],
         messages: {
             noMobx: MESSAGE,
-        }
+        },
     },
     defaultOptions: [{}],
     create: (context, [options]) => {
@@ -33,7 +35,7 @@ exports.default = (0, createRule_1.createRule)({
                     const message = (_a = options === null || options === void 0 ? void 0 : options.message) !== null && _a !== void 0 ? _a : MESSAGE;
                     (0, createRule_1.reportForNode)(context, { node, message });
                 }
-            }
+            },
         };
-    }
+    },
 });

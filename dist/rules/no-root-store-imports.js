@@ -9,19 +9,21 @@ exports.default = (0, createRule_1.createRule)({
         docs: {
             category: 'Best Practices',
             description: 'discourage use of RootStore imports',
-            recommended: 'error'
+            recommended: 'error',
         },
-        schema: [{
+        schema: [
+            {
                 type: 'object',
                 properties: {
                     message: {
                         type: 'string',
                     },
                 },
-            }],
+            },
+        ],
         messages: {
             noRootStoreImports: MESSAGE,
-        }
+        },
     },
     defaultOptions: [{}],
     create: (context, [options]) => ({
@@ -33,5 +35,5 @@ exports.default = (0, createRule_1.createRule)({
                 (0, createRule_1.reportForNode)(context, { node, message });
             }
         },
-    })
+    }),
 });
