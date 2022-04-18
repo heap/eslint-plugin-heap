@@ -67,13 +67,25 @@ exports.default = (0, createRule_1.createRule)({
             recommended: 'error',
         },
         fixable: 'code',
-        schema: [],
+        schema: [
+            {
+                type: 'object',
+                properties: {
+                    limitTo: {
+                        type: 'array',
+                        items: {
+                            type: 'string',
+                        },
+                    },
+                },
+            },
+        ],
         messages: {
             preferAliasImports: 'Path alias is preferred: `{{ alias }}`',
         },
     },
-    defaultOptions: [],
-    create: (context) => {
+    defaultOptions: [{}],
+    create: (context, [options]) => {
         const { parserServices } = context;
         if (!parserServices) {
             throw new Error(`"heap/${RULE_NAME} can only be used with '@typescript-eslint/parser' parser option specified`);
@@ -93,6 +105,9 @@ exports.default = (0, createRule_1.createRule)({
                 const relativeImportPath = importPath.slice(absoluteBaseUrl.length + 1);
                 const matchingAlias = getMatchingAlias(paths, relativeImportPath);
                 if (!matchingAlias || matchingAlias === currentAlias) {
+                    return;
+                }
+                if (options.limitTo && !options.limitTo.includes(matchingAlias)) {
                     return;
                 }
                 context.report({

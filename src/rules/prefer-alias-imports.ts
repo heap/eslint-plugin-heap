@@ -5,7 +5,7 @@ import { matchStar } from '../utils/matchStar';
 import { ReportFixFunction, RuleFixer } from '@typescript-eslint/experimental-utils/dist/ts-eslint';
 import { ImportDeclaration } from '@typescript-eslint/types/dist/ast-spec';
 
-type Options = [];
+type Options = [{ limitTo?: Array<string> }];
 type MessageIds = 'preferAliasImports';
 
 const RULE_NAME = 'prefer-alias-imports';
@@ -59,13 +59,25 @@ export default createRule<Options, MessageIds>({
       recommended: 'error',
     },
     fixable: 'code',
-    schema: [],
+    schema: [
+      {
+        type: 'object',
+        properties: {
+          limitTo: {
+            type: 'array',
+            items: {
+              type: 'string',
+            },
+          },
+        },
+      },
+    ],
     messages: {
       preferAliasImports: 'Path alias is preferred: `{{ alias }}`',
     },
   },
-  defaultOptions: [],
-  create: (context) => {
+  defaultOptions: [{}],
+  create: (context, [options]) => {
     const { parserServices } = context;
     if (!parserServices) {
       throw new Error(
@@ -87,6 +99,9 @@ export default createRule<Options, MessageIds>({
         const relativeImportPath = importPath.slice(absoluteBaseUrl.length + 1);
         const matchingAlias = getMatchingAlias(paths, relativeImportPath);
         if (!matchingAlias || matchingAlias === currentAlias) {
+          return;
+        }
+        if (options.limitTo && !options.limitTo.includes(matchingAlias)) {
           return;
         }
         context.report({
