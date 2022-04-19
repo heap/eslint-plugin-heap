@@ -52,11 +52,36 @@ const buildFixFunction = (node, paths, matchingAlias, relativeImportPath) => {
         });
         if (matched) {
             const importWithAlias = matchingAlias.replace('*', matched);
-            return fixer.replaceText(node.source, `'${importWithAlias}'`);
+            return fixer.replaceText(node, `'${importWithAlias}'`);
         }
         return null;
     };
 };
+const buildPathValidator = (context, options, paths, absoluteBaseUrl, currentPath, currentAlias) => (node, source) => {
+    if (!source.includes('../')) {
+        return;
+    }
+    const importPath = path.resolve(currentPath, source);
+    const relativeImportPath = importPath.slice(absoluteBaseUrl.length + 1);
+    const matchingAlias = getMatchingAlias(paths, relativeImportPath);
+    if (!matchingAlias || matchingAlias === currentAlias) {
+        return;
+    }
+    if (options.limitTo && !options.limitTo.includes(matchingAlias)) {
+        return;
+    }
+    context.report({
+        node,
+        messageId: 'preferAliasImports',
+        data: { alias: matchingAlias },
+        fix: buildFixFunction(node, paths, matchingAlias, relativeImportPath),
+    });
+};
+const isRequireStatement = (expression) => expression.type === 'Identifier' && getIdentifierName(expression) === 'require';
+const isJestMock = (expression) => expression.type === 'MemberExpression' &&
+    getIdentifierName(expression.object) === 'jest' &&
+    getIdentifierName(expression.property) === 'mock';
+const getIdentifierName = (node) => node.type === 'Identifier' ? node.name : undefined;
 exports.default = (0, createRule_1.createRule)({
     name: RULE_NAME,
     meta: {
@@ -95,27 +120,25 @@ exports.default = (0, createRule_1.createRule)({
         const { absoluteBaseUrl, paths } = getConfig(currentPath);
         const currentRelativeFilename = currentFilename.slice(absoluteBaseUrl.length + 1);
         const currentAlias = getMatchingAlias(paths, currentRelativeFilename);
+        const validatePath = buildPathValidator(context, options, paths, absoluteBaseUrl, currentPath, currentAlias);
         return {
+            CallExpression(node) {
+                var _a;
+                if (isRequireStatement(node.callee) || isJestMock(node.callee)) {
+                    const literal = (_a = node.arguments[0]) !== null && _a !== void 0 ? _a : {};
+                    if (literal && literal.type === 'Literal') {
+                        const source = literal.value;
+                        if (typeof source === 'string') {
+                            validatePath(literal, source);
+                        }
+                    }
+                }
+            },
             ImportDeclaration(node) {
                 const source = node.source.value;
-                if (!source.includes('../')) {
-                    return;
+                if (typeof source === 'string') {
+                    validatePath(node.source, source);
                 }
-                const importPath = path.resolve(currentPath, node.source.value);
-                const relativeImportPath = importPath.slice(absoluteBaseUrl.length + 1);
-                const matchingAlias = getMatchingAlias(paths, relativeImportPath);
-                if (!matchingAlias || matchingAlias === currentAlias) {
-                    return;
-                }
-                if (options.limitTo && !options.limitTo.includes(matchingAlias)) {
-                    return;
-                }
-                context.report({
-                    node,
-                    messageId: 'preferAliasImports',
-                    data: { alias: matchingAlias },
-                    fix: buildFixFunction(node, paths, matchingAlias, relativeImportPath),
-                });
             },
         };
     },

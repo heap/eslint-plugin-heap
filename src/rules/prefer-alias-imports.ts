@@ -2,10 +2,18 @@ import { createRule } from '../utils/createRule';
 import * as path from 'path';
 import { loadConfig } from 'tsconfig-paths';
 import { matchStar } from '../utils/matchStar';
-import { ReportFixFunction, RuleFixer } from '@typescript-eslint/experimental-utils/dist/ts-eslint';
-import { ImportDeclaration } from '@typescript-eslint/types/dist/ast-spec';
+import {
+  ReportFixFunction,
+  RuleContext,
+  RuleFixer,
+} from '@typescript-eslint/experimental-utils/dist/ts-eslint';
+import {
+  Identifier,
+  LeftHandSideExpression,
+  Literal,
+} from '@typescript-eslint/types/dist/ast-spec';
 
-type Options = [{ limitTo?: Array<string> }];
+type Options = { limitTo?: Array<string> };
 type MessageIds = 'preferAliasImports';
 
 const RULE_NAME = 'prefer-alias-imports';
@@ -25,7 +33,7 @@ const getMatchingAlias = (paths: Record<string, string[]>, search: string) => {
 };
 
 const buildFixFunction = (
-  node: ImportDeclaration,
+  node: Literal,
   paths: Record<string, Array<string>>,
   matchingAlias: string,
   relativeImportPath: string,
@@ -43,13 +51,54 @@ const buildFixFunction = (
     });
     if (matched) {
       const importWithAlias = matchingAlias.replace('*', matched);
-      return fixer.replaceText(node.source, `'${importWithAlias}'`);
+      return fixer.replaceText(node, `'${importWithAlias}'`);
     }
     return null;
   };
 };
 
-export default createRule<Options, MessageIds>({
+const buildPathValidator =
+  (
+    context: Readonly<RuleContext<'preferAliasImports', [Options]>>,
+    options: Options,
+    paths: Record<string, string[]>,
+    absoluteBaseUrl: string,
+    currentPath: string,
+    currentAlias: string | undefined,
+  ) =>
+  (node: Literal, source: string) => {
+    if (!source.includes('../')) {
+      return;
+    }
+    const importPath = path.resolve(currentPath, source);
+    const relativeImportPath = importPath.slice(absoluteBaseUrl.length + 1);
+    const matchingAlias = getMatchingAlias(paths, relativeImportPath);
+    if (!matchingAlias || matchingAlias === currentAlias) {
+      return;
+    }
+    if (options.limitTo && !options.limitTo.includes(matchingAlias)) {
+      return;
+    }
+    context.report({
+      node,
+      messageId: 'preferAliasImports',
+      data: { alias: matchingAlias },
+      fix: buildFixFunction(node, paths, matchingAlias, relativeImportPath),
+    });
+  };
+
+const isRequireStatement = (expression: LeftHandSideExpression) =>
+  expression.type === 'Identifier' && getIdentifierName(expression) === 'require';
+
+const isJestMock = (expression: LeftHandSideExpression) =>
+  expression.type === 'MemberExpression' &&
+  getIdentifierName(expression.object) === 'jest' &&
+  getIdentifierName(expression.property) === 'mock';
+
+const getIdentifierName = (node: any) =>
+  node.type === 'Identifier' ? (node as Identifier).name : undefined;
+
+export default createRule<[Options], MessageIds>({
   name: RULE_NAME,
   meta: {
     type: 'problem',
@@ -89,27 +138,31 @@ export default createRule<Options, MessageIds>({
     const { absoluteBaseUrl, paths } = getConfig(currentPath);
     const currentRelativeFilename = currentFilename.slice(absoluteBaseUrl.length + 1);
     const currentAlias = getMatchingAlias(paths, currentRelativeFilename);
+    const validatePath = buildPathValidator(
+      context,
+      options,
+      paths,
+      absoluteBaseUrl,
+      currentPath,
+      currentAlias,
+    );
     return {
+      CallExpression(node) {
+        if (isRequireStatement(node.callee) || isJestMock(node.callee)) {
+          const literal = node.arguments[0] ?? {};
+          if (literal && literal.type === 'Literal') {
+            const source = literal.value;
+            if (typeof source === 'string') {
+              validatePath(literal, source);
+            }
+          }
+        }
+      },
       ImportDeclaration(node) {
-        const source = node.source.value as string;
-        if (!source.includes('../')) {
-          return;
+        const source = node.source.value;
+        if (typeof source === 'string') {
+          validatePath(node.source, source);
         }
-        const importPath = path.resolve(currentPath, node.source.value as string);
-        const relativeImportPath = importPath.slice(absoluteBaseUrl.length + 1);
-        const matchingAlias = getMatchingAlias(paths, relativeImportPath);
-        if (!matchingAlias || matchingAlias === currentAlias) {
-          return;
-        }
-        if (options.limitTo && !options.limitTo.includes(matchingAlias)) {
-          return;
-        }
-        context.report({
-          node,
-          messageId: 'preferAliasImports',
-          data: { alias: matchingAlias },
-          fix: buildFixFunction(node, paths, matchingAlias, relativeImportPath),
-        });
       },
     };
   },
