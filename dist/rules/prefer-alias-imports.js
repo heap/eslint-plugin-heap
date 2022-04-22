@@ -122,6 +122,17 @@ exports.default = (0, createRule_1.createRule)({
         const currentAlias = getMatchingAlias(paths, currentRelativeFilename);
         const validatePath = buildPathValidator(context, options, paths, absoluteBaseUrl, currentPath, currentAlias);
         return {
+            TSImportEqualsDeclaration(node) {
+                if (node.moduleReference.type == 'TSExternalModuleReference') {
+                    const literal = node.moduleReference.expression;
+                    if (literal && literal.type === 'Literal') {
+                        const source = literal.value;
+                        if (typeof source === 'string') {
+                            validatePath(literal, source);
+                        }
+                    }
+                }
+            },
             CallExpression(node) {
                 var _a;
                 if (isRequireStatement(node.callee) || isJestMock(node.callee)) {

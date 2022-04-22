@@ -147,6 +147,17 @@ export default createRule<[Options], MessageIds>({
       currentAlias,
     );
     return {
+      TSImportEqualsDeclaration(node) {
+        if (node.moduleReference.type == 'TSExternalModuleReference') {
+          const literal = node.moduleReference.expression;
+          if (literal && literal.type === 'Literal') {
+            const source = literal.value;
+            if (typeof source === 'string') {
+              validatePath(literal, source);
+            }
+          }
+        }
+      },
       CallExpression(node) {
         if (isRequireStatement(node.callee) || isJestMock(node.callee)) {
           const literal = node.arguments[0] ?? {};
