@@ -37,11 +37,13 @@ const buildPathValidator = (
   currentAlias: string | undefined,
 ) => {
   const getMatchingAliasForSource = (source: string) => {
-    const matchedKey = Object.keys(paths).find(
-      (pathsConfigKey) => !!matchStar(pathsConfigKey, source),
-    );
-    if (matchedKey) {
-      return matchedKey;
+    if (!source.includes('../')) {
+      const matchedKey = Object.keys(paths).find(
+        (pathsConfigKey) => !!matchStar(pathsConfigKey, source),
+      );
+      if (matchedKey) {
+        return matchedKey;
+      }
     }
     const importPath = path.resolve(currentPath, source);
     const relativeImportPath = importPath.slice(absoluteBaseUrl.length + 1);
