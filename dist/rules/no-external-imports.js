@@ -40,9 +40,11 @@ const getMatchingAlias = (paths, search) => {
 };
 const buildPathValidator = (context, options, paths, absoluteBaseUrl, currentPath, currentAlias) => {
     const getMatchingAliasForSource = (source) => {
-        const matchedKey = Object.keys(paths).find((pathsConfigKey) => !!(0, matchStar_1.matchStar)(pathsConfigKey, source));
-        if (matchedKey) {
-            return matchedKey;
+        if (!source.includes('../')) {
+            const matchedKey = Object.keys(paths).find((pathsConfigKey) => !!(0, matchStar_1.matchStar)(pathsConfigKey, source));
+            if (matchedKey) {
+                return matchedKey;
+            }
         }
         const importPath = path.resolve(currentPath, source);
         const relativeImportPath = importPath.slice(absoluteBaseUrl.length + 1);
