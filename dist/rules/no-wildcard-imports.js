@@ -78,7 +78,7 @@ const reportLintError = (context, node, source) => {
     const importName = node.local.name; // e.g. for "import * as _", this will be "_"
     const { usages, usageRecords } = findValidUsages(program, importName);
     const hasInvalidUsages = usages === null || usages === void 0 ? void 0 : usages.some((usage) => isInvalidUsage(program, importName, usage));
-    if (usages && usages.length && !hasInvalidUsages) {
+    if ((usages === null || usages === void 0 ? void 0 : usages.length) && (usageRecords === null || usageRecords === void 0 ? void 0 : usageRecords.length) && !hasInvalidUsages) {
         context.report({
             node,
             messageId: 'noWildcardImports',

@@ -21,50 +21,59 @@ var __importStar = (this && this.__importStar) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 const createRule_1 = require("../utils/createRule");
 const path = __importStar(require("path"));
-const tsconfigPaths = __importStar(require("tsconfig-paths"));
+const tsconfig_paths_1 = require("tsconfig-paths");
 const matchStar_1 = require("../utils/matchStar");
 const buildPathValidationListeners_1 = require("../utils/buildPathValidationListeners");
-const RULE_NAME = 'no-external-imports';
+const RULE_NAME = 'prefer-path-alias';
 const getConfig = (cwd) => {
-    const configLoaderResult = tsconfigPaths.loadConfig(cwd);
+    const configLoaderResult = (0, tsconfig_paths_1.loadConfig)(cwd);
     if (configLoaderResult.resultType !== 'success') {
         throw new Error(`failed to init tsconfig-paths: ${configLoaderResult.message}`);
     }
     return configLoaderResult;
 };
 const getMatchingAlias = (paths, search) => {
-    return Object.keys(paths).find((pathsConfigKey) => paths[pathsConfigKey].some((pathsConfigValue) => !!(0, matchStar_1.matchStar)(pathsConfigValue, search)));
+    return Object.keys(paths).find((globAlias) => paths[globAlias].some((globPath) => !!(0, matchStar_1.matchStar)(globPath, search)));
 };
-const buildPathValidator = (context, options, paths, absoluteBaseUrl, currentPath, currentAlias) => {
-    const getMatchingAliasForSource = (source) => {
-        if (!source.includes('../')) {
-            const matchedKey = Object.keys(paths).find((pathsConfigKey) => !!(0, matchStar_1.matchStar)(pathsConfigKey, source));
-            if (matchedKey) {
-                return matchedKey;
+const buildFixFunction = (node, paths, matchingAlias, relativeImportPath) => {
+    if (!matchingAlias.endsWith('*')) {
+        return;
+    }
+    return (fixer) => {
+        let matched;
+        paths[matchingAlias].forEach((globPath) => {
+            const _matched = (0, matchStar_1.matchStar)(globPath, relativeImportPath);
+            if (_matched) {
+                matched = _matched;
             }
-        }
-        const importPath = path.resolve(currentPath, source);
-        const relativeImportPath = importPath.slice(absoluteBaseUrl.length + 1);
-        const matchingAlias = getMatchingAlias(paths, relativeImportPath);
-        return matchingAlias;
-    };
-    return (node) => {
-        const source = node.value;
-        const matchingAlias = getMatchingAliasForSource(source);
-        if (matchingAlias === currentAlias) {
-            return;
-        }
-        if (matchingAlias &&
-            Array.isArray(options.allowedImports) &&
-            options.allowedImports.includes(matchingAlias)) {
-            return;
-        }
-        context.report({
-            node,
-            messageId: 'noExternalImports',
-            data: { alias: currentAlias },
         });
+        if (matched) {
+            const importWithAlias = matchingAlias.replace('*', matched);
+            return fixer.replaceText(node, `'${importWithAlias}'`);
+        }
+        return null;
     };
+};
+const buildPathValidator = (context, options, paths, absoluteBaseUrl, currentPath, currentAlias) => (node) => {
+    const source = node.value;
+    if (!source.includes('../')) {
+        return;
+    }
+    const importPath = path.resolve(currentPath, source);
+    const relativeImportPath = importPath.slice(absoluteBaseUrl.length + 1);
+    const matchingAlias = getMatchingAlias(paths, relativeImportPath);
+    if (!matchingAlias || matchingAlias === currentAlias) {
+        return;
+    }
+    if (options.limitTo && !options.limitTo.includes(matchingAlias)) {
+        return;
+    }
+    context.report({
+        node,
+        messageId: 'preferPathAlias',
+        data: { alias: matchingAlias },
+        fix: buildFixFunction(node, paths, matchingAlias, relativeImportPath),
+    });
 };
 exports.default = (0, createRule_1.createRule)({
     name: RULE_NAME,
@@ -72,14 +81,15 @@ exports.default = (0, createRule_1.createRule)({
         type: 'problem',
         docs: {
             category: 'Best Practices',
-            description: 'Disallow imports from outside of a specified module',
+            description: 'Prefer tsconfig path aliases to make refactoring easier',
             recommended: 'error',
         },
+        fixable: 'code',
         schema: [
             {
                 type: 'object',
                 properties: {
-                    allowedImports: {
+                    limitTo: {
                         type: 'array',
                         items: {
                             type: 'string',
@@ -89,7 +99,7 @@ exports.default = (0, createRule_1.createRule)({
             },
         ],
         messages: {
-            noExternalImports: 'Importing from outside of {{ alias }} is not allowed. Add to "allowedImports" option if a new dependency is needed.',
+            preferPathAlias: 'Path alias is preferred: `{{ alias }}`',
         },
     },
     defaultOptions: [{}],
