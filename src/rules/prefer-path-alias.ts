@@ -8,6 +8,7 @@ import {
   RuleFixer,
 } from '@typescript-eslint/experimental-utils/dist/ts-eslint';
 import {
+  Expression,
   Identifier,
   LeftHandSideExpression,
   Literal,
@@ -146,34 +147,35 @@ export default createRule<[Options], MessageIds>({
       currentPath,
       currentAlias,
     );
+    const validateExpression = (source: Expression | null) => {
+      if (source?.type === 'Literal') {
+        const literal = source as Literal;
+        if (typeof literal.value === 'string') {
+          validatePath(literal, literal.value);
+        }
+      }
+    };
     return {
       TSImportEqualsDeclaration(node) {
         if (node.moduleReference.type == 'TSExternalModuleReference') {
           const literal = node.moduleReference.expression;
-          if (literal && literal.type === 'Literal') {
-            const source = literal.value;
-            if (typeof source === 'string') {
-              validatePath(literal, source);
-            }
-          }
+          validateExpression(literal);
         }
       },
       CallExpression(node) {
         if (isRequireStatement(node.callee) || isJestMock(node.callee)) {
-          const literal = node.arguments[0] ?? {};
-          if (literal && literal.type === 'Literal') {
-            const source = literal.value;
-            if (typeof source === 'string') {
-              validatePath(literal, source);
-            }
-          }
+          const literal = (node.arguments[0] ?? null) as Expression | null;
+          validateExpression(literal);
         }
       },
       ImportDeclaration(node) {
-        const source = node.source.value;
-        if (typeof source === 'string') {
-          validatePath(node.source, source);
-        }
+        validateExpression(node.source);
+      },
+      ExportAllDeclaration(node) {
+        validateExpression(node.source);
+      },
+      ExportNamedDeclaration(node) {
+        validateExpression(node.source);
       },
     };
   },
