@@ -7,12 +7,8 @@ import {
   RuleContext,
   RuleFixer,
 } from '@typescript-eslint/experimental-utils/dist/ts-eslint';
-import {
-  Expression,
-  Identifier,
-  LeftHandSideExpression,
-  Literal,
-} from '@typescript-eslint/types/dist/ast-spec';
+import { StringLiteral, Literal } from '@typescript-eslint/types/dist/ast-spec';
+import { buildPathValidationListeners } from '../utils/buildPathValidationListeners';
 
 type Options = { limitTo?: Array<string> };
 type MessageIds = 'preferPathAlias';
@@ -67,7 +63,8 @@ const buildPathValidator =
     currentPath: string,
     currentAlias: string | undefined,
   ) =>
-  (node: Literal, source: string) => {
+  (node: StringLiteral) => {
+    const source = node.value;
     if (!source.includes('../')) {
       return;
     }
@@ -87,17 +84,6 @@ const buildPathValidator =
       fix: buildFixFunction(node, paths, matchingAlias, relativeImportPath),
     });
   };
-
-const isRequireStatement = (expression: LeftHandSideExpression) =>
-  expression.type === 'Identifier' && getIdentifierName(expression) === 'require';
-
-const isJestMock = (expression: LeftHandSideExpression) =>
-  expression.type === 'MemberExpression' &&
-  getIdentifierName(expression.object) === 'jest' &&
-  getIdentifierName(expression.property) === 'mock';
-
-const getIdentifierName = (node: any) =>
-  node.type === 'Identifier' ? (node as Identifier).name : undefined;
 
 export default createRule<[Options], MessageIds>({
   name: RULE_NAME,
@@ -147,36 +133,6 @@ export default createRule<[Options], MessageIds>({
       currentPath,
       currentAlias,
     );
-    const validateExpression = (source: Expression | null) => {
-      if (source?.type === 'Literal') {
-        const literal = source as Literal;
-        if (typeof literal.value === 'string') {
-          validatePath(literal, literal.value);
-        }
-      }
-    };
-    return {
-      TSImportEqualsDeclaration(node) {
-        if (node.moduleReference.type == 'TSExternalModuleReference') {
-          const literal = node.moduleReference.expression;
-          validateExpression(literal);
-        }
-      },
-      CallExpression(node) {
-        if (isRequireStatement(node.callee) || isJestMock(node.callee)) {
-          const literal = (node.arguments[0] ?? null) as Expression | null;
-          validateExpression(literal);
-        }
-      },
-      ImportDeclaration(node) {
-        validateExpression(node.source);
-      },
-      ExportAllDeclaration(node) {
-        validateExpression(node.source);
-      },
-      ExportNamedDeclaration(node) {
-        validateExpression(node.source);
-      },
-    };
+    return buildPathValidationListeners(validatePath);
   },
 });

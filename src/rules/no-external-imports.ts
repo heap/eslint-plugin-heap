@@ -3,11 +3,8 @@ import * as path from 'path';
 import * as tsconfigPaths from 'tsconfig-paths';
 import { matchStar } from '../utils/matchStar';
 import { RuleContext } from '@typescript-eslint/experimental-utils/dist/ts-eslint';
-import {
-  Identifier,
-  LeftHandSideExpression,
-  Literal,
-} from '@typescript-eslint/types/dist/ast-spec';
+import { StringLiteral } from '@typescript-eslint/types/dist/ast-spec';
+import { buildPathValidationListeners } from '../utils/buildPathValidationListeners';
 
 type Options = { allowedImports?: Array<string> };
 type MessageIds = 'noExternalImports';
@@ -50,7 +47,8 @@ const buildPathValidator = (
     const matchingAlias = getMatchingAlias(paths, relativeImportPath);
     return matchingAlias;
   };
-  return (node: Literal, source: string) => {
+  return (node: StringLiteral) => {
+    const source = node.value;
     const matchingAlias = getMatchingAliasForSource(source);
     if (matchingAlias === currentAlias) {
       return;
@@ -69,17 +67,6 @@ const buildPathValidator = (
     });
   };
 };
-
-const isRequireStatement = (expression: LeftHandSideExpression) =>
-  expression.type === 'Identifier' && getIdentifierName(expression) === 'require';
-
-const isJestMock = (expression: LeftHandSideExpression) =>
-  expression.type === 'MemberExpression' &&
-  getIdentifierName(expression.object) === 'jest' &&
-  getIdentifierName(expression.property) === 'mock';
-
-const getIdentifierName = (node: any) =>
-  node.type === 'Identifier' ? (node as Identifier).name : undefined;
 
 export default createRule<[Options], MessageIds>({
   name: RULE_NAME,
@@ -129,35 +116,6 @@ export default createRule<[Options], MessageIds>({
       currentPath,
       currentAlias,
     );
-    return {
-      TSImportEqualsDeclaration(node) {
-        if (node.moduleReference.type == 'TSExternalModuleReference') {
-          const literal = node.moduleReference.expression;
-          if (literal && literal.type === 'Literal') {
-            const source = literal.value;
-            if (typeof source === 'string') {
-              validatePath(literal, source);
-            }
-          }
-        }
-      },
-      CallExpression(node) {
-        if (isRequireStatement(node.callee) || isJestMock(node.callee)) {
-          const literal = node.arguments[0] ?? {};
-          if (literal && literal.type === 'Literal') {
-            const source = literal.value;
-            if (typeof source === 'string') {
-              validatePath(literal, source);
-            }
-          }
-        }
-      },
-      ImportDeclaration(node) {
-        const source = node.source.value;
-        if (typeof source === 'string') {
-          validatePath(node.source, source);
-        }
-      },
-    };
+    return buildPathValidationListeners(validatePath);
   },
 });
