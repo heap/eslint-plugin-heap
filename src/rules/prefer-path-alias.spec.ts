@@ -1,6 +1,6 @@
 import * as tsconfigPaths from 'tsconfig-paths';
 import { RuleTester } from '@typescript-eslint/experimental-utils/dist/ts-eslint';
-import preferAliasImports from './prefer-alias-imports';
+import preferPathAlias from './prefer-path-alias';
 import { ConfigLoaderResult } from 'tsconfig-paths';
 
 const ruleTester: RuleTester = new RuleTester({
@@ -20,7 +20,7 @@ jest.spyOn(tsconfigPaths, 'loadConfig').mockReturnValue({
   },
 } as unknown as ConfigLoaderResult);
 
-ruleTester.run('preferAliasImports', preferAliasImports, {
+ruleTester.run('preferPathAlias', preferPathAlias, {
   valid: [
     {
       // relative imports that don't peek into other modules are fine
@@ -37,19 +37,19 @@ ruleTester.run('preferAliasImports', preferAliasImports, {
     {
       filename: `${absoluteBaseUrl}/first_module/myfolder/myfile.ts`,
       code: "import { something } from '../../second_module/some_file';",
-      errors: [{ messageId: 'preferAliasImports' }],
+      errors: [{ messageId: 'preferPathAlias' }],
       output: `import { something } from '@module2/some_file';`,
     },
     {
       filename: `${absoluteBaseUrl}/first_module/myfolder/myfile.ts`,
       code: "require('../../second_module/some_file');",
-      errors: [{ messageId: 'preferAliasImports' }],
+      errors: [{ messageId: 'preferPathAlias' }],
       output: `require('@module2/some_file');`,
     },
     {
       filename: `${absoluteBaseUrl}/first_module/myfolder/myfile.ts`,
       code: "jest.mock('../../second_module/some_file');",
-      errors: [{ messageId: 'preferAliasImports' }],
+      errors: [{ messageId: 'preferPathAlias' }],
       output: `jest.mock('@module2/some_file');`,
     },
   ],

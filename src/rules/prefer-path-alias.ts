@@ -14,9 +14,9 @@ import {
 } from '@typescript-eslint/types/dist/ast-spec';
 
 type Options = { limitTo?: Array<string> };
-type MessageIds = 'preferAliasImports';
+type MessageIds = 'preferPathAlias';
 
-const RULE_NAME = 'prefer-alias-imports';
+const RULE_NAME = 'prefer-path-alias';
 
 const getConfig = (cwd: string) => {
   const configLoaderResult = loadConfig(cwd);
@@ -59,7 +59,7 @@ const buildFixFunction = (
 
 const buildPathValidator =
   (
-    context: Readonly<RuleContext<'preferAliasImports', [Options]>>,
+    context: Readonly<RuleContext<'preferPathAlias', [Options]>>,
     options: Options,
     paths: Record<string, string[]>,
     absoluteBaseUrl: string,
@@ -81,7 +81,7 @@ const buildPathValidator =
     }
     context.report({
       node,
-      messageId: 'preferAliasImports',
+      messageId: 'preferPathAlias',
       data: { alias: matchingAlias },
       fix: buildFixFunction(node, paths, matchingAlias, relativeImportPath),
     });
@@ -122,7 +122,7 @@ export default createRule<[Options], MessageIds>({
       },
     ],
     messages: {
-      preferAliasImports: 'Path alias is preferred: `{{ alias }}`',
+      preferPathAlias: 'Path alias is preferred: `{{ alias }}`',
     },
   },
   defaultOptions: [{}],
