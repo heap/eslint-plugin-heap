@@ -8,7 +8,7 @@ export const createRule = ESLintUtils.RuleCreator((ruleName) => ruleName);
 
 interface ReportNodeDescriptor {
   readonly node: TSESTree.Node | TSESTree.Token;
-  readonly loc?: Readonly<TSESTree.SourceLocation> | Readonly<TSESTree.LineAndColumnData>;
+  readonly loc?: Readonly<TSESTree.SourceLocation>;
   message: string;
   fix?: ReportFixFunction;
 }

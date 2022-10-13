@@ -24,7 +24,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 const tsconfigPaths = __importStar(require("tsconfig-paths"));
 const ts_eslint_1 = require("@typescript-eslint/experimental-utils/dist/ts-eslint");
-const no_external_imports_1 = __importDefault(require("./no-external-imports"));
+const prefer_path_alias_1 = __importDefault(require("./prefer-path-alias"));
 const ruleTester = new ts_eslint_1.RuleTester({
     parser: require.resolve('@typescript-eslint/parser'),
 });
@@ -39,105 +39,87 @@ jest.spyOn(tsconfigPaths, 'loadConfig').mockReturnValue({
         '@nested/*': ['third_module/nested/*'],
     },
 });
-ruleTester.run('no-external-imports', no_external_imports_1.default, {
+ruleTester.run('preferPathAlias', prefer_path_alias_1.default, {
     valid: [
+        // relative imports that don't peek into other modules are fine
         {
             filename: `${absoluteBaseUrl}/first_module/myfolder/myfile.ts`,
             code: "import { something } from '../internal_file';",
         },
+        // technically it's the same module, so no error is thrown
         {
             filename: `${absoluteBaseUrl}/first_module/myfolder/myfile.ts`,
             code: "import { something } from '../../first_module/internal_file';",
         },
-        {
-            filename: `${absoluteBaseUrl}/not_in_a_module/some_file.ts`,
-            code: "import { something } from '../second_module';",
-        },
+        // random call expressions are allowed
         {
             filename: `${absoluteBaseUrl}/first_module/myfolder/myfile.ts`,
-            code: "import { something } from '../../second_module/somefile';",
-            options: [{ allowedImports: ['@module2/*'] }],
-        },
-        {
-            filename: `${absoluteBaseUrl}/first_module/myfolder/myfile.ts`,
-            code: "import { something } from '../../third_module/nested/somefile';",
-            options: [{ allowedImports: ['@nested/*'] }],
-        },
-        {
-            filename: `${absoluteBaseUrl}/first_module/myfolder/myfile.ts`,
-            code: "import { something } from '@nested/somefile';",
-            options: [{ allowedImports: ['@nested/*'] }],
-        },
-        {
-            filename: `${absoluteBaseUrl}/first_module/myfolder/myfile.ts`,
-            code: "import * as cypress from 'cypress';",
-        },
-        {
-            filename: `${absoluteBaseUrl}/first_module/myfolder/myfile.ts`,
-            code: "import { render } from '@testing-library/react';",
+            code: "const test = myFunction('../../second_module/some_file.css');",
         },
     ],
     invalid: [
+        // import-all declaration
         {
-            // cannot import from another module
             filename: `${absoluteBaseUrl}/first_module/myfolder/myfile.ts`,
-            code: "import { something } from '../../second_module/somefile';",
-            errors: [{ messageId: 'noExternalImports' }],
+            code: "import * as asdf from '../../second_module/some_file';",
+            errors: [{ messageId: 'preferPathAlias' }],
+            output: `import * as asdf from '@module2/some_file';`,
         },
+        // import declaration
         {
-            // cannot import from another module using alias
             filename: `${absoluteBaseUrl}/first_module/myfolder/myfile.ts`,
-            code: "import { something } from '@module2/somefile';",
-            errors: [{ messageId: 'noExternalImports' }],
+            code: "import '../../second_module/some_file.css'",
+            errors: [{ messageId: 'preferPathAlias' }],
+            output: "import '@module2/some_file.css'",
         },
+        // named import
         {
-            // cannot import from parent of another module
-            filename: `${absoluteBaseUrl}/third_module/nested/myfolder/myfile.ts`,
-            code: "import { something } from '../../third_module/somefile';",
-            options: [{ allowedImports: ['@nested/*'] }],
-            errors: [{ messageId: 'noExternalImports' }],
-        },
-        {
-            // cannot import from anywhere else outside of current module
-            filename: `${absoluteBaseUrl}/third_module/nested/myfolder/myfile.ts`,
-            code: "import { something } from '../../not_in_a_module/somefile';",
-            errors: [{ messageId: 'noExternalImports' }],
-        },
-        {
-            // with require syntax
             filename: `${absoluteBaseUrl}/first_module/myfolder/myfile.ts`,
-            code: "const something = require('../../second_module/somefile');",
-            errors: [{ messageId: 'noExternalImports' }],
+            code: "import { something } from '../../second_module/some_file';",
+            errors: [{ messageId: 'preferPathAlias' }],
+            output: `import { something } from '@module2/some_file';`,
         },
+        // import equals declaration
         {
-            // with jest.mock
             filename: `${absoluteBaseUrl}/first_module/myfolder/myfile.ts`,
-            code: "const something = jest.mock('../../second_module/somefile');",
-            errors: [{ messageId: 'noExternalImports' }],
+            code: "import test = require('../../second_module/some_file');",
+            errors: [{ messageId: 'preferPathAlias' }],
+            output: `import test = require('@module2/some_file');`,
         },
+        // require call expression
         {
-            // with import equals syntax
             filename: `${absoluteBaseUrl}/first_module/myfolder/myfile.ts`,
-            code: "import something = require('../../second_module/somefile');",
-            errors: [{ messageId: 'noExternalImports' }],
+            code: "require('../../second_module/some_file');",
+            errors: [{ messageId: 'preferPathAlias' }],
+            output: `require('@module2/some_file');`,
         },
+        // jest.mock call expression
         {
-            // with export-all declaration
+            filename: `${absoluteBaseUrl}/first_module/myfolder/myfile.ts`,
+            code: "jest.mock('../../second_module/some_file');",
+            errors: [{ messageId: 'preferPathAlias' }],
+            output: `jest.mock('@module2/some_file');`,
+        },
+        // export-all declaration
+        {
             filename: `${absoluteBaseUrl}/first_module/myfolder/myfile.ts`,
             code: "export * as something from '../../second_module/some_file'",
-            errors: [{ messageId: 'noExternalImports' }],
+            errors: [{ messageId: 'preferPathAlias' }],
+            output: `export * as something from '@module2/some_file'`,
         },
+        // named export
         {
-            // with named export
             filename: `${absoluteBaseUrl}/first_module/myfolder/myfile.ts`,
             code: "export { something } from '../../second_module/some_file'",
-            errors: [{ messageId: 'noExternalImports' }],
+            errors: [{ messageId: 'preferPathAlias' }],
+            output: "export { something } from '@module2/some_file'",
         },
+        // export assignment
         {
-            // with export assignment
             filename: `${absoluteBaseUrl}/first_module/myfolder/myfile.ts`,
             code: "export = require('../../second_module/some_file')",
-            errors: [{ messageId: 'noExternalImports' }],
+            errors: [{ messageId: 'preferPathAlias' }],
+            output: "export = require('@module2/some_file')",
         },
     ],
 });

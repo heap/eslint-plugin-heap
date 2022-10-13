@@ -7,16 +7,13 @@ import {
   RuleContext,
   RuleFixer,
 } from '@typescript-eslint/experimental-utils/dist/ts-eslint';
-import {
-  Identifier,
-  LeftHandSideExpression,
-  Literal,
-} from '@typescript-eslint/types/dist/ast-spec';
+import { StringLiteral, Literal } from '@typescript-eslint/types/dist/ast-spec';
+import { buildPathValidationListeners } from '../utils/buildPathValidationListeners';
 
 type Options = { limitTo?: Array<string> };
-type MessageIds = 'preferAliasImports';
+type MessageIds = 'preferPathAlias';
 
-const RULE_NAME = 'prefer-alias-imports';
+const RULE_NAME = 'prefer-path-alias';
 
 const getConfig = (cwd: string) => {
   const configLoaderResult = loadConfig(cwd);
@@ -59,14 +56,15 @@ const buildFixFunction = (
 
 const buildPathValidator =
   (
-    context: Readonly<RuleContext<'preferAliasImports', [Options]>>,
+    context: Readonly<RuleContext<'preferPathAlias', [Options]>>,
     options: Options,
     paths: Record<string, string[]>,
     absoluteBaseUrl: string,
     currentPath: string,
     currentAlias: string | undefined,
   ) =>
-  (node: Literal, source: string) => {
+  (node: StringLiteral) => {
+    const source = node.value;
     if (!source.includes('../')) {
       return;
     }
@@ -81,22 +79,11 @@ const buildPathValidator =
     }
     context.report({
       node,
-      messageId: 'preferAliasImports',
+      messageId: 'preferPathAlias',
       data: { alias: matchingAlias },
       fix: buildFixFunction(node, paths, matchingAlias, relativeImportPath),
     });
   };
-
-const isRequireStatement = (expression: LeftHandSideExpression) =>
-  expression.type === 'Identifier' && getIdentifierName(expression) === 'require';
-
-const isJestMock = (expression: LeftHandSideExpression) =>
-  expression.type === 'MemberExpression' &&
-  getIdentifierName(expression.object) === 'jest' &&
-  getIdentifierName(expression.property) === 'mock';
-
-const getIdentifierName = (node: any) =>
-  node.type === 'Identifier' ? (node as Identifier).name : undefined;
 
 export default createRule<[Options], MessageIds>({
   name: RULE_NAME,
@@ -122,7 +109,7 @@ export default createRule<[Options], MessageIds>({
       },
     ],
     messages: {
-      preferAliasImports: 'Path alias is preferred: `{{ alias }}`',
+      preferPathAlias: 'Path alias is preferred: `{{ alias }}`',
     },
   },
   defaultOptions: [{}],
@@ -146,35 +133,6 @@ export default createRule<[Options], MessageIds>({
       currentPath,
       currentAlias,
     );
-    return {
-      TSImportEqualsDeclaration(node) {
-        if (node.moduleReference.type == 'TSExternalModuleReference') {
-          const literal = node.moduleReference.expression;
-          if (literal && literal.type === 'Literal') {
-            const source = literal.value;
-            if (typeof source === 'string') {
-              validatePath(literal, source);
-            }
-          }
-        }
-      },
-      CallExpression(node) {
-        if (isRequireStatement(node.callee) || isJestMock(node.callee)) {
-          const literal = node.arguments[0] ?? {};
-          if (literal && literal.type === 'Literal') {
-            const source = literal.value;
-            if (typeof source === 'string') {
-              validatePath(literal, source);
-            }
-          }
-        }
-      },
-      ImportDeclaration(node) {
-        const source = node.source.value;
-        if (typeof source === 'string') {
-          validatePath(node.source, source);
-        }
-      },
-    };
+    return buildPathValidationListeners(validatePath);
   },
 });

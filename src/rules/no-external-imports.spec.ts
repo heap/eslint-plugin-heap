@@ -102,5 +102,23 @@ ruleTester.run('no-external-imports', noExternalImports, {
       code: "import something = require('../../second_module/somefile');",
       errors: [{ messageId: 'noExternalImports' }],
     },
+    {
+      // with export-all declaration
+      filename: `${absoluteBaseUrl}/first_module/myfolder/myfile.ts`,
+      code: "export * as something from '../../second_module/some_file'",
+      errors: [{ messageId: 'noExternalImports' }],
+    },
+    {
+      // with named export
+      filename: `${absoluteBaseUrl}/first_module/myfolder/myfile.ts`,
+      code: "export { something } from '../../second_module/some_file'",
+      errors: [{ messageId: 'noExternalImports' }],
+    },
+    {
+      // with export assignment
+      filename: `${absoluteBaseUrl}/first_module/myfolder/myfile.ts`,
+      code: "export = require('../../second_module/some_file')",
+      errors: [{ messageId: 'noExternalImports' }],
+    },
   ],
 });
