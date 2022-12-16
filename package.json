@@ -4,13 +4,16 @@
   "files": [
     "dist/**"
   ],
+  "dependencies": {
+    "@typescript-eslint/experimental-utils": "^4.33.0",
+    "tsconfig-paths": "3.9.0"
+  },
   "devDependencies": {
     "@types/eslint": "^7.2.6",
     "@types/estree": "0.0.51",
     "@types/jest": "^27.0.2",
     "@types/node": "^14.14.20",
     "@typescript-eslint/eslint-plugin": "^4.33.0",
-    "@typescript-eslint/experimental-utils": "^4.33.0",
     "@typescript-eslint/parser": "^4.33.0",
     "eslint": "^7.19.0",
     "eslint-config-prettier": "^8.5.0",
@@ -22,7 +25,8 @@
   },
   "peerDependencies": {
     "@typescript-eslint/eslint-plugin": "4.33.x",
-    "@typescript-eslint/parser": "4.33.x"
+    "@typescript-eslint/parser": "4.33.x",
+    "tsconfig-paths": "3.9.0"
   },
   "scripts": {
     "build": "./node_modules/typescript/bin/tsc -b",
@@ -30,8 +34,5 @@
     "test": "jest",
     "test:jest": "jest",
     "test:jest:watch": "jest --watch"
-  },
-  "dependencies": {
-    "tsconfig-paths": "^3.14.1"
   }
 }
