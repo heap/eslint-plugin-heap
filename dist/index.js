@@ -10,6 +10,7 @@ const no_dockerignore_1 = __importDefault(require("./rules/no-dockerignore"));
 const no_wildcard_imports_1 = __importDefault(require("./rules/no-wildcard-imports"));
 const prefer_path_alias_1 = __importDefault(require("./rules/prefer-path-alias"));
 const require_tz_1 = __importDefault(require("./rules/require-tz"));
+const no_emotion_css_instance_classname_1 = __importDefault(require("./rules/no-emotion-css-instance-classname"));
 module.exports = {
     rules: {
         'no-mobx': no_mobx_1.default,
@@ -19,5 +20,6 @@ module.exports = {
         'no-wildcard-imports': no_wildcard_imports_1.default,
         'prefer-path-alias': prefer_path_alias_1.default,
         'require-tz': require_tz_1.default,
+        'no-emotion-css-instance-classname': no_emotion_css_instance_classname_1.default,
     },
 };

@@ -5,6 +5,7 @@ import noDockerignore from './rules/no-dockerignore';
 import noWildcardImports from './rules/no-wildcard-imports';
 import preferPathAlias from './rules/prefer-path-alias';
 import requireTZ from './rules/require-tz';
+import noEmotionCssInstanceClassname from './rules/no-emotion-css-instance-classname';
 
 module.exports = {
   rules: {
@@ -15,5 +16,6 @@ module.exports = {
     'no-wildcard-imports': noWildcardImports,
     'prefer-path-alias': preferPathAlias,
     'require-tz': requireTZ,
+    'no-emotion-css-instance-classname': noEmotionCssInstanceClassname,
   },
 };
