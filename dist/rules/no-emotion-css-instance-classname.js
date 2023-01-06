@@ -26,12 +26,27 @@ exports.default = (0, createRule_1.createRule)({
                 if (attributeValue &&
                     attributeValue.type === 'JSXExpressionContainer' &&
                     attributeValue.expression.type === 'CallExpression' &&
-                    attributeValue.expression.callee.type === 'Identifier' &&
-                    attributeValue.expression.callee.name === 'css') {
-                    context.report({
-                        node,
-                        messageId: 'noEmotionCSSInstanceClassname',
-                    });
+                    attributeValue.expression.callee.type === 'Identifier') {
+                    if (attributeValue.expression.callee.name === 'css') {
+                        context.report({
+                            node,
+                            messageId: 'noEmotionCSSInstanceClassname',
+                        });
+                    }
+                    else if (attributeValue.expression.callee.name.toLowerCase() === 'classnames' &&
+                        attributeValue.expression.arguments.length >= 1) {
+                        const isInvalid = attributeValue.expression.arguments.some((arg) => {
+                            return (arg.type === 'CallExpression' &&
+                                arg.callee.type === 'Identifier' &&
+                                arg.callee.name === 'css');
+                        });
+                        if (isInvalid) {
+                            context.report({
+                                node,
+                                messageId: 'noEmotionCSSInstanceClassname',
+                            });
+                        }
+                    }
                 }
             }
         },

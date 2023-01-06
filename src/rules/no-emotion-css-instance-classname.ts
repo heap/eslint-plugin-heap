@@ -29,13 +29,31 @@ export default createRule<[], MessageIds>({
           attributeValue &&
           attributeValue.type === 'JSXExpressionContainer' &&
           attributeValue.expression.type === 'CallExpression' &&
-          attributeValue.expression.callee.type === 'Identifier' &&
-          attributeValue.expression.callee.name === 'css'
+          attributeValue.expression.callee.type === 'Identifier'
         ) {
-          context.report({
-            node,
-            messageId: 'noEmotionCSSInstanceClassname',
-          });
+          if (attributeValue.expression.callee.name === 'css') {
+            context.report({
+              node,
+              messageId: 'noEmotionCSSInstanceClassname',
+            });
+          } else if (
+            attributeValue.expression.callee.name.toLowerCase() === 'classnames' &&
+            attributeValue.expression.arguments.length >= 1
+          ) {
+            const isInvalid = attributeValue.expression.arguments.some((arg) => {
+              return (
+                arg.type === 'CallExpression' &&
+                arg.callee.type === 'Identifier' &&
+                arg.callee.name === 'css'
+              );
+            });
+            if (isInvalid) {
+              context.report({
+                node,
+                messageId: 'noEmotionCSSInstanceClassname',
+              });
+            }
+          }
         }
       }
     },
