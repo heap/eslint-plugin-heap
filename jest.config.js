@@ -6,6 +6,7 @@ module.exports = {
     },
   },
   testEnvironment: 'node',
+  testRegex: '\\.spec\\.ts$',
   transform: {
     '^.+\\.(d.ts|ts|tsx)?$': 'ts-jest',
   },
