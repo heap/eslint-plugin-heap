@@ -45,6 +45,9 @@ export const buildPathValidationListeners = (
     ImportDeclaration(node) {
       validateExpression(node.source);
     },
+    ImportExpression(node) {
+      validateExpression(node.source);
+    },
     ExportAllDeclaration(node) {
       validateExpression(node.source);
     },

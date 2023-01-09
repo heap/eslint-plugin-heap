@@ -67,6 +67,13 @@ ruleTester.run('preferPathAlias', preferPathAlias, {
       errors: [{ messageId: 'preferPathAlias' }],
       output: `import test = require('@module2/some_file');`,
     },
+    // import expression (dynamic imports)
+    {
+      filename: `${absoluteBaseUrl}/first_module/myfolder/myfile.ts`,
+      code: "const test = import('../../second_module/some_file');",
+      errors: [{ messageId: 'preferPathAlias' }],
+      output: `const test = import('@module2/some_file');`,
+    },
     // require call expression
     {
       filename: `${absoluteBaseUrl}/first_module/myfolder/myfile.ts`,
