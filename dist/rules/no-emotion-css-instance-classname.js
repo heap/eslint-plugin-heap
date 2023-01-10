@@ -1,7 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 const createRule_1 = require("../utils/createRule");
-const MESSAGE = 'emotion css instance should not use for classname, use emotion variable instead';
+const MESSAGE = "Emotion's css property should not be used directly within a React component. Please move the css instance to a variable outside of the component's scope before using.";
 exports.default = (0, createRule_1.createRule)({
     name: 'no-emotion-css-instance-classname',
     meta: {
