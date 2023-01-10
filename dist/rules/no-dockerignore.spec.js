@@ -89,7 +89,7 @@ jest.mock('../utils/fileSystem', () => ({
         throw new Error(`file not found: ${path}`);
     },
 }));
-ruleTester.run('no-test-file-imports', no_dockerignore_1.default, {
+ruleTester.run('no-dockerignore', no_dockerignore_1.default, {
     valid: [
         {
             filename: `${absoluteBaseUrl}/front/src/app/views/MyComponent.tsx`,
