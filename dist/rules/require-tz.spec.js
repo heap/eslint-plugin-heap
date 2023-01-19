@@ -67,10 +67,6 @@ ruleTester.run('requireTZ', require_tz_1.default, {
         const test = moment(Date.now());
       `,
             errors: [{ messageId: 'requireTZ' }],
-            output: `
-        import * as moment from 'moment-timezone';
-        const test = moment.tz(Date.now(), moment.tz.guess());
-      `,
         },
         // should also catch imports from "moment-timezone"
         {
@@ -79,10 +75,6 @@ ruleTester.run('requireTZ', require_tz_1.default, {
         const test = moment(Date.now());
       `,
             errors: [{ messageId: 'requireTZ' }],
-            output: `
-        import * as moment from 'moment-timezone';
-        const test = moment.tz(Date.now(), moment.tz.guess());
-      `,
         },
         // should catch instances where the variable "moment" isn't used
         {
@@ -91,10 +83,6 @@ ruleTester.run('requireTZ', require_tz_1.default, {
         const test = asdf(Date.now());
       `,
             errors: [{ messageId: 'requireTZ' }],
-            output: `
-        import * as asdf from 'moment-timezone';
-        const test = asdf.tz(Date.now(), asdf.tz.guess());
-      `,
         },
         // should catch import equals declarations
         {
@@ -103,10 +91,6 @@ ruleTester.run('requireTZ', require_tz_1.default, {
         const test = moment(Date.now());
       `,
             errors: [{ messageId: 'requireTZ' }],
-            output: `
-        import moment = require('moment-timezone');
-        const test = moment.tz(Date.now(), moment.tz.guess());
-      `,
         },
         // multiple arguments passed to moment
         {
@@ -115,10 +99,6 @@ ruleTester.run('requireTZ', require_tz_1.default, {
         const test = moment('2023-01-04 9:13', 'YYYY-MM-DD H:mm');
       `,
             errors: [{ messageId: 'requireTZ' }],
-            output: `
-        import * as moment from 'moment-timezone';
-        const test = moment.tz('2023-01-04 9:13', 'YYYY-MM-DD H:mm', moment.tz.guess());
-      `,
         },
         // no arguments passed to moment
         {
@@ -128,11 +108,6 @@ ruleTester.run('requireTZ', require_tz_1.default, {
         const duration = trialEndMoment.diff(moment());
       `,
             errors: [{ messageId: 'requireTZ' }],
-            output: `
-        import * as moment from 'moment-timezone';
-        import { trialEndMoment } from './trial-end-date';
-        const duration = trialEndMoment.diff(moment.tz(moment.tz.guess()));
-      `,
         },
     ],
 });

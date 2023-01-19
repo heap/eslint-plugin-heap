@@ -1,9 +1,5 @@
 import type { CallExpression, Expression, Literal } from '@typescript-eslint/types/dist/ast-spec';
 import { createRule } from '../utils/createRule';
-import type {
-  ReportFixFunction,
-  RuleFix,
-} from '@typescript-eslint/experimental-utils/dist/ts-eslint';
 
 type MessageIds = 'requireTZ' | 'noMomentUnaryExpression';
 
@@ -21,32 +17,6 @@ const hasTZAppendedToMomentInstance = (node: CallExpression) =>
   node.parent.property.type === 'Identifier' &&
   (node.parent.property.name === 'tz' || node.parent.property.name === 'utc');
 
-const buildFixFunction =
-  (
-    node: CallExpression,
-    momentIdentifierName: string,
-    momentImportLiteral: Literal,
-  ): ReportFixFunction =>
-  (fixer) => {
-    const fixes: Array<RuleFix> = [];
-    if (momentImportLiteral.value === 'moment') {
-      fixes.push(fixer.replaceTextRange(momentImportLiteral.range, "'moment-timezone'"));
-    }
-    if (node.arguments.length) {
-      const lastArgument = node.arguments[node.arguments.length - 1];
-      fixes.push(fixer.insertTextAfter(node.callee, '.tz'));
-      fixes.push(fixer.insertTextAfter(lastArgument, `, ${momentIdentifierName}.tz.guess()`));
-    } else {
-      fixes.push(
-        fixer.replaceTextRange(
-          node.range,
-          `${momentIdentifierName}.tz(${momentIdentifierName}.tz.guess())`,
-        ),
-      );
-    }
-    return fixes;
-  };
-
 export default createRule<[], MessageIds>({
   name: RULE_NAME,
   meta: {
@@ -56,7 +26,6 @@ export default createRule<[], MessageIds>({
       description: 'Enforce using non default moment constructor',
       recommended: 'error',
     },
-    fixable: 'code',
     schema: [],
     messages: {
       requireTZ: 'Must use moment.tz or moment.utc instead of default constructor',
@@ -98,7 +67,6 @@ export default createRule<[], MessageIds>({
             context.report({
               node,
               messageId: 'requireTZ',
-              fix: buildFixFunction(node, momentIdentifierName, momentImportLiteral),
             });
           }
         }

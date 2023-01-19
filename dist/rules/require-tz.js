@@ -11,21 +11,6 @@ const hasTZAppendedToMomentInstance = (node) => {
         node.parent.property.type === 'Identifier' &&
         (node.parent.property.name === 'tz' || node.parent.property.name === 'utc');
 };
-const buildFixFunction = (node, momentIdentifierName, momentImportLiteral) => (fixer) => {
-    const fixes = [];
-    if (momentImportLiteral.value === 'moment') {
-        fixes.push(fixer.replaceTextRange(momentImportLiteral.range, "'moment-timezone'"));
-    }
-    if (node.arguments.length) {
-        const lastArgument = node.arguments[node.arguments.length - 1];
-        fixes.push(fixer.insertTextAfter(node.callee, '.tz'));
-        fixes.push(fixer.insertTextAfter(lastArgument, `, ${momentIdentifierName}.tz.guess()`));
-    }
-    else {
-        fixes.push(fixer.replaceTextRange(node.range, `${momentIdentifierName}.tz(${momentIdentifierName}.tz.guess())`));
-    }
-    return fixes;
-};
 exports.default = (0, createRule_1.createRule)({
     name: RULE_NAME,
     meta: {
@@ -35,7 +20,6 @@ exports.default = (0, createRule_1.createRule)({
             description: 'Enforce using non default moment constructor',
             recommended: 'error',
         },
-        fixable: 'code',
         schema: [],
         messages: {
             requireTZ: 'Must use moment.tz or moment.utc instead of default constructor',
@@ -73,7 +57,6 @@ exports.default = (0, createRule_1.createRule)({
                         context.report({
                             node,
                             messageId: 'requireTZ',
-                            fix: buildFixFunction(node, momentIdentifierName, momentImportLiteral),
                         });
                     }
                 }
